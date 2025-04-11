@@ -20,13 +20,47 @@ self.addEventListener('install', (event) => {
       return cache.addAll(urlsToCache);
     })
   );
+  // Force the waiting service worker to become the active service worker
+  self.skipWaiting();
 });
 
-// Serve from cache, falling back to network
+// When the service worker activates, claim clients and clear old caches
+self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  
+  event.waitUntil(
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheWhitelist.indexOf(cacheName) === -1) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Tell the active service worker to take control of the page immediately
+      self.clients.claim()
+    ])
+  );
+});
+
+// Serve from cache, falling back to network with cache update
 self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return;
+  
+  // Skip cross-origin requests and Supabase API calls
+  const url = new URL(event.request.url);
+  if (url.hostname !== self.location.hostname || url.pathname.includes('supabase')) {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {
+        // Return cached response
         return response;
       }
       
@@ -53,35 +87,18 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Update the cache when a new service worker is activated
-self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
 // Handle push notifications
 self.addEventListener('push', (event) => {
-  const data = event.data.json();
+  const data = event.data ? event.data.json() : {};
   
   const options = {
-    body: data.body,
+    body: data.body || 'New message from Nelson-GPT',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: '1'
+      primaryKey: data.id || '1'
     },
     actions: [
       {
@@ -93,7 +110,7 @@ self.addEventListener('push', (event) => {
   };
   
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title || 'Nelson-GPT', options)
   );
 });
 

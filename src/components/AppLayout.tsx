@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import SidebarMenu from './SidebarMenu';
 import ChatContainer from './ChatContainer';
 import SplashScreen from './SplashScreen';
+import PWAInstallPrompt from './PWAInstallPrompt';
 
 const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -69,6 +70,9 @@ const AppLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
         
         {children || <ChatContainer />}
       </div>
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 };

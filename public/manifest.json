@@ -7,6 +7,7 @@
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1EAEDB",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -41,5 +42,18 @@
       "url": "/?action=new",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "prefer_related_applications": false
 }
