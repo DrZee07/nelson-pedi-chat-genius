@@ -1,1 +1,5 @@
+
 project_id = "alhctsqjhnbglqkvrspg"
+
+[functions.nelson-chat]
+verify_jwt = false

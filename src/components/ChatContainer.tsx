@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ChatMessage, { MessageType } from './ChatMessage';
 import ChatInput from './ChatInput';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from "@/components/ui/use-toast";
 
 interface Message {
   id: string;
@@ -48,19 +50,55 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ className }) => {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
-    // Simulate AI response
-    setTimeout(() => {
-      // In a real app, this would be a call to your backend API
+    try {
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('nelson-chat', {
+        body: { query: content }
+      });
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to get response');
+      }
+      
+      // Add bot message with the response
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Thank you for your question. This is a placeholder response. In the real implementation, this would use RAG with Nelson Textbook of Pediatrics content and the Mistral API to generate a helpful, accurate response for your pediatric question.",
+        content: data.response,
         type: 'bot',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       
       setMessages(prev => [...prev, botMessage]);
+      
+      // Show a toast if sources were found
+      if (data.sourcesCount > 0) {
+        toast({
+          title: "Sources Retrieved",
+          description: `Found ${data.sourcesCount} relevant sections from Nelson Textbook`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error calling Nelson-GPT:', error);
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm sorry, I encountered an error processing your request. Please try again later.",
+        type: 'bot',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Error",
+        description: "Failed to connect to Nelson-GPT.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
